@@ -1,0 +1,33 @@
+FROM debian:stretch-slim
+LABEL maintainer="Julian Pawlowski <julian.pawlowski@gmail.com>"
+
+ENV TERM xterm
+
+# Install base environment
+RUN DEBIAN_FRONTEND=noninteractive apt-get update \
+  && DEBIAN_FRONTEND=noninteractive apt-get install -qqy --no-install-recommends apt-utils \
+  && DEBIAN_FRONTEND=noninteractive apt-get install -qqy --no-install-recommends \
+  apt-transport-https \
+  bash \
+  bluez \
+  bluez-hcidump \
+  gawk \
+  libnet-server-perl \
+  netcat \
+  perl \
+  socat \
+  && apt-get autoremove && apt-get clean \
+  && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+ADD https://svn.fhem.de/fhem/trunk/fhem/contrib/PRESENCE/presenced /presenced
+COPY src/entry.sh /entry.sh
+RUN chmod 755 /*.sh /presenced
+
+VOLUME [ "/data" ]
+
+EXPOSE 22
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 CMD nc -z localhost 5111
+
+ENTRYPOINT [ "/entry.sh" ]
+CMD [ "start" ]
